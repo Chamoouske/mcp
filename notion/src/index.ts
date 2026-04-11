@@ -16,6 +16,17 @@ if (!NOTION_API_KEY) {
   process.exit(1);
 }
 
+function log(level: string, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.error(JSON.stringify({
+    timestamp,
+    service: "notion-mcp",
+    level,
+    message,
+    ...data,
+  }));
+}
+
 function createServer() {
   const notionClient = new NotionClient(NOTION_API_KEY!);
   const pageRepo = new NotionPageRepository(notionClient);
@@ -44,14 +55,23 @@ function createServer() {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    log("info", "list_tools_request");
     return { tools: toolDefinitions };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const name = request.params.name;
     const args = request.params.arguments || {};
-    const result = await toolHandler.handle(name, args);
-    return result as any;
+    log("info", "tool_call", { tool: name, args: Object.keys(args) });
+    
+    try {
+      const result = await toolHandler.handle(name, args);
+      log("info", "tool_success", { tool: name });
+      return result as any;
+    } catch (error: any) {
+      log("error", "tool_error", { tool: name, error: error.message });
+      throw error;
+    }
   });
 
   return server;
@@ -71,6 +91,8 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.post("/mcp", async (req: Request, res: Response) => {
+  log("info", "request", { method: "POST", path: "/mcp" });
+  
   const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -81,6 +103,8 @@ app.post("/mcp", async (req: Request, res: Response) => {
 });
 
 app.get("/mcp", async (req: Request, res: Response) => {
+  log("info", "request", { method: "GET", path: "/mcp" });
+  
   const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -91,5 +115,5 @@ app.get("/mcp", async (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.error(`Notion MCP Server running on http://localhost:${PORT}`);
+  log("info", "server_start", { port: PORT });
 });

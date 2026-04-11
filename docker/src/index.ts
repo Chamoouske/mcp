@@ -39,6 +39,17 @@ import {
   DockerVolumeLsTool,
 } from './application/tools/NetworkTools.js';
 
+function log(level: string, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.error(JSON.stringify({
+    timestamp,
+    service: "docker-mcp",
+    level,
+    message,
+    ...data,
+  }));
+}
+
 function createServer() {
   const server = new Server(
     {
@@ -79,12 +90,22 @@ function createServer() {
   toolHandler.registerTool(new DockerVolumeLsTool(dockerService));
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    log("info", "list_tools_request");
     return { tools: toolHandler.getTools() };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
     const { name, arguments: args } = request.params;
-    return await toolHandler.executeTool(name, args);
+    log("info", "tool_call", { tool: name, args: Object.keys(args) });
+    
+    try {
+      const result = await toolHandler.executeTool(name, args);
+      log("info", "tool_success", { tool: name });
+      return result;
+    } catch (error: any) {
+      log("error", "tool_error", { tool: name, error: error.message });
+      throw error;
+    }
   });
 
   return server;
@@ -104,6 +125,8 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.post("/mcp", async (req: Request, res: Response) => {
+  log("info", "request", { method: "POST", path: "/mcp" });
+  
   const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -114,6 +137,8 @@ app.post("/mcp", async (req: Request, res: Response) => {
 });
 
 app.get("/mcp", async (req: Request, res: Response) => {
+  log("info", "request", { method: "GET", path: "/mcp" });
+  
   const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
@@ -124,5 +149,5 @@ app.get("/mcp", async (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.error(`Docker MCP Server running on http://localhost:${PORT}`);
+  log("info", "server_start", { port: PORT });
 });
