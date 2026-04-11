@@ -13,7 +13,6 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.notion-mcp.rule=PathPrefix(`/mcp/notion`)"
-      - "traefik.http.routers.notion-mcp.entrypoints=web"
       - "traefik.http.services.notion-mcp.loadbalancer.server.port=3001"
     restart: unless-stopped
 
@@ -27,7 +26,6 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.docker-mcp.rule=PathPrefix(`/mcp/docker`)"
-      - "traefik.http.routers.docker-mcp.entrypoints=web"
       - "traefik.http.services.docker-mcp.loadbalancer.server.port=3002"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
