@@ -16,42 +16,46 @@ if (!NOTION_API_KEY) {
   process.exit(1);
 }
 
-const notionClient = new NotionClient(NOTION_API_KEY);
-const pageRepo = new NotionPageRepository(notionClient);
-const databaseRepo = new NotionDatabaseRepository(notionClient);
-const commentRepo = new NotionCommentRepository(notionClient);
-const userRepo = new NotionUserRepository(notionClient);
-const searchRepo = new NotionSearchRepository(notionClient);
+function createServer() {
+  const notionClient = new NotionClient(NOTION_API_KEY!);
+  const pageRepo = new NotionPageRepository(notionClient);
+  const databaseRepo = new NotionDatabaseRepository(notionClient);
+  const commentRepo = new NotionCommentRepository(notionClient);
+  const userRepo = new NotionUserRepository(notionClient);
+  const searchRepo = new NotionSearchRepository(notionClient);
 
-const pageUseCases = new PageUseCases(pageRepo);
-const databaseUseCases = new DatabaseUseCases(databaseRepo);
-const commentUseCases = new CommentUseCases(commentRepo);
-const userUseCases = new UserUseCases(userRepo);
-const searchUseCases = new SearchUseCases(searchRepo);
+  const pageUseCases = new PageUseCases(pageRepo);
+  const databaseUseCases = new DatabaseUseCases(databaseRepo);
+  const commentUseCases = new CommentUseCases(commentRepo);
+  const userUseCases = new UserUseCases(userRepo);
+  const searchUseCases = new SearchUseCases(searchRepo);
 
-const toolHandler = new ToolHandler(
-  pageUseCases,
-  databaseUseCases,
-  commentUseCases,
-  userUseCases,
-  searchUseCases
-);
+  const toolHandler = new ToolHandler(
+    pageUseCases,
+    databaseUseCases,
+    commentUseCases,
+    userUseCases,
+    searchUseCases
+  );
 
-const server = new Server(
-  { name: "notion-custom", version: "1.0.0" },
-  { capabilities: { tools: {} } }
-);
+  const server = new Server(
+    { name: "notion-custom", version: "1.0.0" },
+    { capabilities: { tools: {} } }
+  );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: toolDefinitions };
-});
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return { tools: toolDefinitions };
+  });
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const name = request.params.name;
-  const args = request.params.arguments || {};
-  const result = await toolHandler.handle(name, args);
-  return result as any;
-});
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const name = request.params.name;
+    const args = request.params.arguments || {};
+    const result = await toolHandler.handle(name, args);
+    return result as any;
+  });
+
+  return server;
+}
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -67,6 +71,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.post("/mcp", async (req: Request, res: Response) => {
+  const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
@@ -76,6 +81,7 @@ app.post("/mcp", async (req: Request, res: Response) => {
 });
 
 app.get("/mcp", async (req: Request, res: Response) => {
+  const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
