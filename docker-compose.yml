@@ -7,11 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: notion-mcp
     environment:
-      - NODE_ENV=production
-      - PORT=3001
       - NOTION_API_KEY=${NOTION_API_KEY}
-    ports:
-      - "3001:3001"
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notion-mcp.rule=PathPrefix(`/mcp/notion`)"
+      - "traefik.http.routers.notion-mcp.entrypoints=web"
+      - "traefik.http.services.notion-mcp.loadbalancer.server.port=3001"
     restart: unless-stopped
 
   docker-mcp:
@@ -19,12 +22,18 @@ services:
       context: ./docker
       dockerfile: Dockerfile
     container_name: docker-mcp
-    environment:
-      - NODE_ENV=production
-      - PORT=3002
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docker-mcp.rule=PathPrefix(`/mcp/docker`)"
+      - "traefik.http.routers.docker-mcp.entrypoints=web"
+      - "traefik.http.services.docker-mcp.loadbalancer.server.port=3002"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "3002:3002"
     restart: unless-stopped
     privileged: true
+
+networks:
+  traefik:
+    external: true
