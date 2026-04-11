@@ -1,5 +1,6 @@
+import express, { Request, Response } from "express";
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -38,71 +39,84 @@ import {
   DockerVolumeLsTool,
 } from './application/tools/NetworkTools.js';
 
-class DockerMcpServer {
-  private server: Server;
-  private toolHandler: ToolHandler;
-
-  constructor() {
-    this.server = new Server(
-      {
-        name: 'docker-mcp-server',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      }
-    );
-
-    this.toolHandler = new ToolHandler();
-    this.registerTools();
-    this.setupHandlers();
+const server = new Server(
+  {
+    name: 'docker-mcp-server',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
   }
+);
 
-  private registerTools(): void {
-    const dockerService = new DockerService();
+const toolHandler = new ToolHandler();
+const dockerService = new DockerService();
 
-    this.toolHandler.registerTool(new DockerPsTool(dockerService));
-    this.toolHandler.registerTool(new DockerStartTool(dockerService));
-    this.toolHandler.registerTool(new DockerStopTool(dockerService));
-    this.toolHandler.registerTool(new DockerRestartTool(dockerService));
-    this.toolHandler.registerTool(new DockerRmTool(dockerService));
-    this.toolHandler.registerTool(new DockerImagesTool(dockerService));
-    this.toolHandler.registerTool(new DockerLogsTool(dockerService));
-    this.toolHandler.registerTool(new DockerExecTool(dockerService));
-    this.toolHandler.registerTool(new DockerPullTool(dockerService));
-    this.toolHandler.registerTool(new DockerRunTool(dockerService));
-    this.toolHandler.registerTool(new DockerBuildTool(dockerService));
+toolHandler.registerTool(new DockerPsTool(dockerService));
+toolHandler.registerTool(new DockerStartTool(dockerService));
+toolHandler.registerTool(new DockerStopTool(dockerService));
+toolHandler.registerTool(new DockerRestartTool(dockerService));
+toolHandler.registerTool(new DockerRmTool(dockerService));
+toolHandler.registerTool(new DockerImagesTool(dockerService));
+toolHandler.registerTool(new DockerLogsTool(dockerService));
+toolHandler.registerTool(new DockerExecTool(dockerService));
+toolHandler.registerTool(new DockerPullTool(dockerService));
+toolHandler.registerTool(new DockerRunTool(dockerService));
+toolHandler.registerTool(new DockerBuildTool(dockerService));
 
-    this.toolHandler.registerTool(new DockerComposeUpTool(dockerService));
-    this.toolHandler.registerTool(new DockerComposeDownTool(dockerService));
-    this.toolHandler.registerTool(new DockerComposePsTool(dockerService));
+toolHandler.registerTool(new DockerComposeUpTool(dockerService));
+toolHandler.registerTool(new DockerComposeDownTool(dockerService));
+toolHandler.registerTool(new DockerComposePsTool(dockerService));
 
-    this.toolHandler.registerTool(new DockerInspectContainerTool(dockerService));
-    this.toolHandler.registerTool(new DockerInspectImageTool(dockerService));
-    this.toolHandler.registerTool(new DockerStatsTool(dockerService));
+toolHandler.registerTool(new DockerInspectContainerTool(dockerService));
+toolHandler.registerTool(new DockerInspectImageTool(dockerService));
+toolHandler.registerTool(new DockerStatsTool(dockerService));
 
-    this.toolHandler.registerTool(new DockerNetworkLsTool(dockerService));
-    this.toolHandler.registerTool(new DockerVolumeLsTool(dockerService));
-  }
+toolHandler.registerTool(new DockerNetworkLsTool(dockerService));
+toolHandler.registerTool(new DockerVolumeLsTool(dockerService));
 
-  private setupHandlers(): void {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return { tools: this.toolHandler.getTools() };
-    });
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: toolHandler.getTools() };
+});
 
-    this.server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
-      const { name, arguments: args } = request.params;
-      return await this.toolHandler.executeTool(name, args);
-    });
-  }
+server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
+  const { name, arguments: args } = request.params;
+  return await toolHandler.executeTool(name, args);
+});
 
-  async start(): Promise<void> {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-  }
-}
+const app = express();
+const PORT = Number(process.env.PORT) || 3002;
 
-const server = new DockerMcpServer();
-server.start();
+app.use(express.json());
+
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ 
+    name: "docker-mcp", 
+    version: "1.0.0",
+    status: "running" 
+  });
+});
+
+app.post("/mcp", async (req: Request, res: Response) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+  
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
+
+app.get("/mcp", async (req: Request, res: Response) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+  
+  await server.connect(transport);
+  await transport.handleRequest(req, res);
+});
+
+app.listen(PORT, () => {
+  console.error(`Docker MCP Server running on http://localhost:${PORT}`);
+});

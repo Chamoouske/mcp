@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  notion-mcp:
+    build:
+      context: ./notion
+      dockerfile: Dockerfile
+    container_name: notion-mcp
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  docker-mcp:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: docker-mcp
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+    privileged: true

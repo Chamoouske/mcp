@@ -1,5 +1,6 @@
+import express, { Request, Response } from "express";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { toolDefinitions } from "./presentation/tools.js";
 import { ToolHandler } from "./presentation/handler.js";
@@ -7,9 +8,6 @@ import { NotionClient, NotionPageRepository, NotionDatabaseRepository, NotionCom
 import { PageUseCases, DatabaseUseCases, CommentUseCases, UserUseCases, SearchUseCases } from "./application/useCases.js";
 
 import "dotenv/config";
-
-console.error("=== Notion MCP started ===");
-console.error("ENV CHECK:", { key: process.env.NOTION_API_KEY?.substring(0, 10) });
 
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
 
@@ -55,10 +53,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   return result as any;
 });
 
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("Notion MCP Server running on stdio");
-}
+const app = express();
+const PORT = Number(process.env.PORT) || 3001;
 
-main().catch(console.error);
+app.use(express.json());
+
+app.get("/", (_req: Request, res: Response) => {
+  res.json({ 
+    name: "notion-mcp", 
+    version: "1.0.0",
+    status: "running" 
+  });
+});
+
+app.post("/mcp", async (req: Request, res: Response) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+  
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
+
+app.get("/mcp", async (req: Request, res: Response) => {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+  
+  await server.connect(transport);
+  await transport.handleRequest(req, res);
+});
+
+app.listen(PORT, () => {
+  console.error(`Notion MCP Server running on http://localhost:${PORT}`);
+});
