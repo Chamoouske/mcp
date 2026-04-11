@@ -11,6 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - NOTION_API_KEY=${NOTION_API_KEY}
     ports:
       - "3001:3001"
     restart: unless-stopped
