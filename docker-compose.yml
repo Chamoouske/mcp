@@ -6,8 +6,6 @@ services:
       context: ./notion
       dockerfile: Dockerfile
     container_name: notion-mcp
-    env_file:
-      - .env
     environment:
       - NODE_ENV=production
       - PORT=3001
