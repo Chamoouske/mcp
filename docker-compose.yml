@@ -34,6 +34,23 @@ services:
     restart: unless-stopped
     privileged: true
 
+  traefik-mcp:
+    build:
+      context: ./traefik
+      dockerfile: Dockerfile
+    container_name: traefik-mcp
+    environment:
+      - TRAEFIK_API_URL=http://traefik:8080
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-mcp.rule=PathPrefix(`/mcp/traefik`)"
+      - "traefik.http.routers.traefik-mcp.middlewares=traefik-mcp-stripprefix"
+      - "traefik.http.middlewares.traefik-mcp-stripprefix.stripprefix.prefixes=/mcp/traefik"
+      - "traefik.http.services.traefik-mcp.loadbalancer.server.port=80"
+    restart: unless-stopped
+
 networks:
   traefik:
     external: true
