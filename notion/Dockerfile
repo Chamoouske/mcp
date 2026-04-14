@@ -10,7 +10,8 @@ COPY . .
 
 RUN npm run build
 
-RUN addgroup -g 1000 nonroot && adduser -D -u 1000 nonroot
+RUN addgroup nonroot || true
+RUN adduser -D nonroot || true
 USER nonroot
 
 CMD ["npm", "start"]
