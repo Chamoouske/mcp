@@ -25,28 +25,6 @@ export class DockerComposeUpTool implements ITool {
   }
 }
 
-export class DockerComposeDownTool implements ITool {
-  constructor(private dockerService: IDockerService) {}
-
-  getDefinition(): ToolDefinition {
-    return {
-      name: 'docker_compose_down',
-      description: 'Stop docker-compose services',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          projectName: { type: 'string', description: 'Project name' },
-        },
-      },
-    };
-  }
-
-  async execute(args: any): Promise<ToolResult> {
-    await this.dockerService.composeDown(args.projectName || 'default');
-    return { content: [{ type: 'text', text: 'Compose services stopped' }] };
-  }
-}
-
 export class DockerComposePsTool implements ITool {
   constructor(private dockerService: IDockerService) {}
 

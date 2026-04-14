@@ -94,30 +94,6 @@ export class DockerRestartTool implements ITool {
   }
 }
 
-export class DockerRmTool implements ITool {
-  constructor(private dockerService: IDockerService) {}
-
-  getDefinition(): ToolDefinition {
-    return {
-      name: 'docker_rm',
-      description: 'Remove a Docker container',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          container: { type: 'string', description: 'Container name or ID' },
-          force: { type: 'boolean', description: 'Force removal', default: false },
-        },
-        required: ['container'],
-      },
-    };
-  }
-
-  async execute(args: any): Promise<ToolResult> {
-    await this.dockerService.removeContainer(args.container, args.force || false);
-    return { content: [{ type: 'text', text: `Container ${args.container} removed` }] };
-  }
-}
-
 export class DockerImagesTool implements ITool {
   constructor(private dockerService: IDockerService) {}
 
