@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
@@ -115,6 +115,15 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3002;
 
 app.use(express.json());
+
+app.use("/mcp", (req: Request, res: Response, next: NextFunction) => {
+  const accept = req.headers.accept || "";
+  if(!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+    req.headers.accept = "application/json, text/event-stream";
+  }
+
+  next();
+});
 
 app.get("/", (_req: Request, res: Response) => {
   res.json({ 
