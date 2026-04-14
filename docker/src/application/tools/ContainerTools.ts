@@ -140,30 +140,6 @@ export class DockerLogsTool implements ITool {
   }
 }
 
-export class DockerExecTool implements ITool {
-  constructor(private dockerService: IDockerService) {}
-
-  getDefinition(): ToolDefinition {
-    return {
-      name: 'docker_exec',
-      description: 'Execute a command in a running container',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          container: { type: 'string', description: 'Container name or ID' },
-          cmd: { type: 'string', description: 'Command to execute' },
-        },
-        required: ['container', 'cmd'],
-      },
-    };
-  }
-
-  async execute(args: any): Promise<ToolResult> {
-    const output = await this.dockerService.execInContainer(args.container, args.cmd);
-    return { content: [{ type: 'text', text: output }] };
-  }
-}
-
 export class DockerPullTool implements ITool {
   constructor(private dockerService: IDockerService) {}
 

@@ -15,7 +15,6 @@ import DockerPsTool, {
   DockerRestartTool,
   DockerImagesTool,
   DockerLogsTool,
-  DockerExecTool,
   DockerPullTool,
   DockerRunTool,
   DockerBuildTool,
@@ -70,7 +69,6 @@ function createServer() {
   toolHandler.registerTool(new DockerRestartTool(dockerService));
   toolHandler.registerTool(new DockerImagesTool(dockerService));
   toolHandler.registerTool(new DockerLogsTool(dockerService));
-  toolHandler.registerTool(new DockerExecTool(dockerService));
   toolHandler.registerTool(new DockerPullTool(dockerService));
   toolHandler.registerTool(new DockerRunTool(dockerService));
   toolHandler.registerTool(new DockerBuildTool(dockerService));
