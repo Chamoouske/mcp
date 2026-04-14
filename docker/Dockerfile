@@ -10,4 +10,6 @@ COPY . .
 
 RUN npm run build
 
+USER nonroot
+
 CMD ["npm", "start"]

@@ -112,7 +112,7 @@ function createServer() {
 }
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3002;
+const PORT = Number(process.env.PORT) || 80;
 
 app.use(express.json());
 
