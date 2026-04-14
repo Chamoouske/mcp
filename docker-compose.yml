@@ -6,7 +6,6 @@ services:
     container_name: notion-mcp
     environment:
       - NOTION_API_KEY=${NOTION_API_KEY}
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
     networks:
       - traefik
     labels:
@@ -14,7 +13,7 @@ services:
       - "traefik.http.routers.notion-mcp.rule=PathPrefix(`/mcp/notion`)"
       - "traefik.http.routers.notion-mcp.middlewares=notion-mcp-stripprefix"
       - "traefik.http.middlewares.notion-mcp-stripprefix.stripprefix.prefixes=/mcp/notion"
-      - "traefik.http.services.notion-mcp.loadbalancer.server.port=3001"
+      - "traefik.http.services.notion-mcp.loadbalancer.server.port=80"
     restart: unless-stopped
 
   docker-mcp:
@@ -22,8 +21,6 @@ services:
       context: ./docker
       dockerfile: Dockerfile
     container_name: docker-mcp
-    environment:
-      - NODE_TLS_REJECT_UNAUTHORIZED=0
     networks:
       - traefik
     labels:
@@ -31,7 +28,7 @@ services:
       - "traefik.http.routers.docker-mcp.rule=PathPrefix(`/mcp/docker`)"
       - "traefik.http.routers.docker-mcp.middlewares=docker-mcp-stripprefix"
       - "traefik.http.middlewares.docker-mcp-stripprefix.stripprefix.prefixes=/mcp/docker"
-      - "traefik.http.services.docker-mcp.loadbalancer.server.port=3002"
+      - "traefik.http.services.docker-mcp.loadbalancer.server.port=80"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
