@@ -1,30 +1,6 @@
 import IDockerService from '../../domain/interfaces/IDockerService.js';
 import { ITool, ToolDefinition, ToolResult } from '../../domain/interfaces/ITool.js';
 
-export class DockerComposeUpTool implements ITool {
-  constructor(private dockerService: IDockerService) {}
-
-  getDefinition(): ToolDefinition {
-    return {
-      name: 'docker_compose_up',
-      description: 'Start docker-compose services',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          composeFile: { type: 'string', description: 'Path to docker-compose file', default: 'docker-compose.yml' },
-          projectName: { type: 'string', description: 'Project name' },
-        },
-        required: ['composeFile'],
-      },
-    };
-  }
-
-  async execute(args: any): Promise<ToolResult> {
-    await this.dockerService.composeUp(args.projectName || 'default', args.composeFile);
-    return { content: [{ type: 'text', text: 'Compose services started' }] };
-  }
-}
-
 export class DockerComposePsTool implements ITool {
   constructor(private dockerService: IDockerService) {}
 

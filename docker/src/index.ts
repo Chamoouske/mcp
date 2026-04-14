@@ -20,7 +20,6 @@ import DockerPsTool, {
 } from './application/tools/ContainerTools.js';
 
 import {
-  DockerComposeUpTool,
   DockerComposePsTool,
 } from './application/tools/ComposeTools.js';
 
@@ -71,7 +70,6 @@ function createServer() {
   toolHandler.registerTool(new DockerPullTool(dockerService));
   toolHandler.registerTool(new DockerBuildTool(dockerService));
 
-  toolHandler.registerTool(new DockerComposeUpTool(dockerService));
   toolHandler.registerTool(new DockerComposePsTool(dockerService));
 
   toolHandler.registerTool(new DockerInspectContainerTool(dockerService));
