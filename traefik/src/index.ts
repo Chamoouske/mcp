@@ -1,219 +1,148 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import express, { Request, Response } from "express";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
-import { TraefikService } from './infrastructure/traefik/TraefikService.js';
-import { RouterTools, MiddlewareTools, ServiceTools, SystemTools } from './application/tools/index.js';
+import { TraefikService } from "./infrastructure/traefik/TraefikService.js";
+import ToolHandler from "./application/services/ToolHandler.js";
 
-const TRAEFIK_API_URL = process.env.TRAEFIK_API_URL || 'http://traefik:8080';
+import ListRoutersTool, {
+  GetRouterTool,
+  CreateRouterTool,
+  UpdateRouterTool,
+  DeleteRouterTool,
+} from "./application/tools/RouterTools.js";
 
-const traefikService = new TraefikService(TRAEFIK_API_URL);
-const routerTools = new RouterTools(traefikService);
-const middlewareTools = new MiddlewareTools(traefikService);
-const serviceTools = new ServiceTools(traefikService);
-const systemTools = new SystemTools(traefikService);
+import ListMiddlewaresTool, {
+  GetMiddlewareTool,
+  CreateMiddlewareTool,
+  DeleteMiddlewareTool,
+} from "./application/tools/MiddlewareTools.js";
 
-const server = new Server(
-  {
-    name: 'traefik-mcp-server',
-    version: '1.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
+import ListServicesTool from "./application/tools/ServiceTools.js";
+
+import ReloadConfigTool, { GetHealthTool } from "./application/tools/SystemTools.js";
+
+const TRAEFIK_API_URL = process.env.TRAEFIK_API_URL || "http://traefik:8080";
+
+function log(level: string, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.error(JSON.stringify({
+    timestamp,
+    service: "traefik-mcp",
+    level,
+    message,
+    ...data,
+  }));
+}
+
+function createServer() {
+  const server = new Server(
+    {
+      name: "traefik-mcp-server",
+      version: "1.0.0",
     },
-  }
-);
-
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: 'list_routers',
-        description: 'List all Traefik HTTP routers',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
+    {
+      capabilities: {
+        tools: {},
       },
-      {
-        name: 'get_router',
-        description: 'Get details of a specific router',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Router name' },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'create_router',
-        description: 'Create a new Traefik router',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Router name' },
-            rule: { type: 'string', description: 'Routing rule (e.g., PathPrefix(`/api`)' },
-            service: { type: 'string', description: 'Target service name' },
-            middlewares: { type: 'array', items: { type: 'string' }, description: 'Middleware names' },
-            tls: { type: 'object', properties: { certResolver: { type: 'string' } } },
-          },
-          required: ['name', 'rule', 'service'],
-        },
-      },
-      {
-        name: 'update_router',
-        description: 'Update an existing router',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Router name' },
-            rule: { type: 'string', description: 'Routing rule' },
-            service: { type: 'string', description: 'Target service name' },
-            middlewares: { type: 'array', items: { type: 'string' } },
-            tls: { type: 'object', properties: { certResolver: { type: 'string' } } },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'delete_router',
-        description: 'Delete a router',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Router name' },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'list_middlewares',
-        description: 'List all Traefik middlewares',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-      {
-        name: 'get_middleware',
-        description: 'Get details of a specific middleware',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Middleware name' },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'create_middleware',
-        description: 'Create a new Traefik middleware',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Middleware name' },
-            type: { type: 'string', description: 'Middleware type (e.g., basicauth, compress, rateLimit)' },
-            config: { type: 'object', description: 'Middleware configuration' },
-          },
-          required: ['name', 'type'],
-        },
-      },
-      {
-        name: 'delete_middleware',
-        description: 'Delete a middleware',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: 'Middleware name' },
-          },
-          required: ['name'],
-        },
-      },
-      {
-        name: 'list_services',
-        description: 'List all Traefik HTTP services',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-      {
-        name: 'reload_config',
-        description: 'Reload Traefik configuration',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-      {
-        name: 'get_health',
-        description: 'Get Traefik health and overview',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-      },
-    ],
-  };
-});
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    switch (name) {
-      case 'list_routers':
-        return await routerTools.listRouters();
-      case 'get_router':
-        return await routerTools.getRouter(args as { name: string });
-      case 'create_router':
-        return await routerTools.createRouter(args as { name: string; rule: string; service: string; middlewares?: string[]; tls?: { certResolver?: string } });
-      case 'update_router':
-        return await routerTools.updateRouter(args as { name: string; rule?: string; service?: string; middlewares?: string[]; tls?: { certResolver?: string } });
-      case 'delete_router':
-        return await routerTools.deleteRouter(args as { name: string });
-      case 'list_middlewares':
-        return await middlewareTools.listMiddlewares();
-      case 'get_middleware':
-        return await middlewareTools.getMiddleware(args as { name: string });
-      case 'create_middleware':
-        return await middlewareTools.createMiddleware(args as { name: string; type: string; config?: Record<string, any> });
-      case 'delete_middleware':
-        return await middlewareTools.deleteMiddleware(args as { name: string });
-      case 'list_services':
-        return await serviceTools.listServices();
-      case 'reload_config':
-        return await systemTools.reloadConfig();
-      case 'get_health':
-        return await systemTools.getHealth();
-      default:
-        throw new Error(`Unknown tool: ${name}`);
     }
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error: ${error.message}`,
-        },
-      ],
-      isError: true,
-    };
+  );
+
+  const toolHandler = new ToolHandler();
+  const traefikService = new TraefikService(TRAEFIK_API_URL);
+
+  toolHandler.registerTool(new ListRoutersTool(traefikService));
+  toolHandler.registerTool(new GetRouterTool(traefikService));
+  toolHandler.registerTool(new CreateRouterTool(traefikService));
+  toolHandler.registerTool(new UpdateRouterTool(traefikService));
+  toolHandler.registerTool(new DeleteRouterTool(traefikService));
+
+  toolHandler.registerTool(new ListMiddlewaresTool(traefikService));
+  toolHandler.registerTool(new GetMiddlewareTool(traefikService));
+  toolHandler.registerTool(new CreateMiddlewareTool(traefikService));
+  toolHandler.registerTool(new DeleteMiddlewareTool(traefikService));
+
+  toolHandler.registerTool(new ListServicesTool(traefikService));
+
+  toolHandler.registerTool(new ReloadConfigTool(traefikService));
+  toolHandler.registerTool(new GetHealthTool(traefikService));
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    log("info", "list_tools_request");
+    return { tools: toolHandler.getTools() };
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
+    const { name, arguments: args } = request.params;
+    log("info", "tool_call", { tool: name, args: Object.keys(args) });
+
+    try {
+      const result = await toolHandler.executeTool(name, args);
+      log("info", "tool_success", { tool: name });
+      return result;
+    } catch (error: any) {
+      log("error", "tool_error", { tool: name, error: error.message });
+      throw error;
+    }
+  });
+
+  return server;
+}
+
+const app = express();
+const PORT = Number(process.env.PORT) || 80;
+
+app.use(express.json());
+
+app.get("/", (_req: Request, res: Response) => {
+  res.json({
+    name: "traefik-mcp",
+    version: "1.0.0",
+    status: "running"
+  });
+});
+
+function addValidHeaders(req: Request) {
+  const accept = req.headers.accept || "";
+  if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+    req.headers.accept = "application/json, text/event-stream";
   }
+  const headerKeys = Object.keys(req.headers);
+  const rawHeaders: string[] = [];
+  for (const key of headerKeys) {
+    rawHeaders.push(key);
+    rawHeaders.push(req.headers[key] as string);
+  }
+  req.rawHeaders = rawHeaders;
+}
+
+app.post("/mcp", async (req: Request, res: Response) => {
+  log("info", "request", { method: "POST", path: "/mcp" });
+  addValidHeaders(req);
+
+  const server = createServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
 });
 
-const transport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => crypto.randomUUID(),
+app.get("/mcp", async (req: Request, res: Response) => {
+  log("info", "request", { method: "GET", path: "/mcp" });
+  addValidHeaders(req);
+
+  const server = createServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  await server.connect(transport);
+  await transport.handleRequest(req, res);
 });
 
-await transport.start();
-await server.connect(transport);
-
-console.log('Traefik MCP Server running on HTTP');
-
-process.on('SIGTERM', async () => {
-  await server.close();
-  process.exit(0);
+app.listen(PORT, () => {
+  log("info", "server_start", { port: PORT });
 });
