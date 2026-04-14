@@ -167,21 +167,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'list_routers':
         return await routerTools.listRouters();
       case 'get_router':
-        return await routerTools.getRouter(args);
+        return await routerTools.getRouter(args as { name: string });
       case 'create_router':
-        return await routerTools.createRouter(args);
+        return await routerTools.createRouter(args as { name: string; rule: string; service: string; middlewares?: string[]; tls?: { certResolver?: string } });
       case 'update_router':
-        return await routerTools.updateRouter(args);
+        return await routerTools.updateRouter(args as { name: string; rule?: string; service?: string; middlewares?: string[]; tls?: { certResolver?: string } });
       case 'delete_router':
-        return await routerTools.deleteRouter(args);
+        return await routerTools.deleteRouter(args as { name: string });
       case 'list_middlewares':
         return await middlewareTools.listMiddlewares();
       case 'get_middleware':
-        return await middlewareTools.getMiddleware(args);
+        return await middlewareTools.getMiddleware(args as { name: string });
       case 'create_middleware':
-        return await middlewareTools.createMiddleware(args);
+        return await middlewareTools.createMiddleware(args as { name: string; type: string; config?: Record<string, any> });
       case 'delete_middleware':
-        return await middlewareTools.deleteMiddleware(args);
+        return await middlewareTools.deleteMiddleware(args as { name: string });
       case 'list_services':
         return await serviceTools.listServices();
       case 'reload_config':

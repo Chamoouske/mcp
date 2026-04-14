@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { ITraefikService, Router, Middleware, Service } from '../domain/interfaces/ITraefikService.js';
+import { ITraefikService, Router, Middleware, Service } from '../../domain/interfaces/ITraefikService.js';
 
 export class TraefikService implements ITraefikService {
   private client: AxiosInstance;

@@ -1,4 +1,4 @@
-import { ITraefikService, Router, Middleware } from '../domain/interfaces/ITraefikService.js';
+import { ITraefikService, Router, Middleware } from '../../domain/interfaces/ITraefikService.js';
 
 export class RouterTools {
   constructor(private traefikService: ITraefikService) {}
