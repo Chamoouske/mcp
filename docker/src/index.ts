@@ -115,6 +115,13 @@ function addValidHeaders(req: Request) {
   if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
     req.headers.accept = "application/json, text/event-stream";
   }
+  const headerKeys = Object.keys(req.headers);
+  const rawHeaders: string[] = [];
+  for (const key of headerKeys) {
+    rawHeaders.push(key);
+    rawHeaders.push(req.headers[key] as string);
+  }
+  req.rawHeaders = rawHeaders;
 }
 
 app.post("/mcp", async (req: Request, res: Response) => {
