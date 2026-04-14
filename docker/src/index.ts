@@ -16,7 +16,6 @@ import DockerPsTool, {
   DockerImagesTool,
   DockerLogsTool,
   DockerPullTool,
-  DockerRunTool,
   DockerBuildTool,
 } from './application/tools/ContainerTools.js';
 
@@ -70,7 +69,6 @@ function createServer() {
   toolHandler.registerTool(new DockerImagesTool(dockerService));
   toolHandler.registerTool(new DockerLogsTool(dockerService));
   toolHandler.registerTool(new DockerPullTool(dockerService));
-  toolHandler.registerTool(new DockerRunTool(dockerService));
   toolHandler.registerTool(new DockerBuildTool(dockerService));
 
   toolHandler.registerTool(new DockerComposeUpTool(dockerService));

@@ -163,41 +163,6 @@ export class DockerPullTool implements ITool {
   }
 }
 
-export class DockerRunTool implements ITool {
-  constructor(private dockerService: IDockerService) {}
-
-  getDefinition(): ToolDefinition {
-    return {
-      name: 'docker_run',
-      description: 'Run a new container',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          image: { type: 'string', description: 'Image name' },
-          name: { type: 'string', description: 'Container name' },
-          ports: { type: 'array', items: { type: 'string' }, description: 'Port mappings (e.g., ["8080:80"])' },
-          volumes: { type: 'array', items: { type: 'string' }, description: 'Volume mappings' },
-          env: { type: 'array', items: { type: 'string' }, description: 'Environment variables' },
-          detached: { type: 'boolean', description: 'Run in detached mode', default: true },
-        },
-        required: ['image'],
-      },
-    };
-  }
-
-  async execute(args: any): Promise<ToolResult> {
-    const containerId = await this.dockerService.runContainer({
-      image: args.image,
-      name: args.name,
-      ports: args.ports,
-      volumes: args.volumes,
-      env: args.env,
-      detached: args.detached,
-    });
-    return { content: [{ type: 'text', text: `Container created: ${containerId}` }] };
-  }
-}
-
 export class DockerBuildTool implements ITool {
   constructor(private dockerService: IDockerService) {}
 
