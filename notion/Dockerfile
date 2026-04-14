@@ -10,8 +10,8 @@ COPY . .
 
 RUN npm run build
 
-RUN addgroup nonroot || true
-RUN adduser -D nonroot || true
+RUN apk add --no-cache shadow && \
+    groupadd -r nonroot && useradd -r -g nonroot nonroot || true
 USER nonroot
 
 CMD ["npm", "start"]
