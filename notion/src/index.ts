@@ -1,11 +1,25 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { toolDefinitions } from "./presentation/tools.js";
-import { ToolHandler } from "./presentation/handler.js";
+import ToolHandler from "./presentation/ToolHandler.js";
 import { NotionClient, NotionPageRepository, NotionDatabaseRepository, NotionCommentRepository, NotionUserRepository, NotionSearchRepository } from "./infrastructure/repositories.js";
 import { PageUseCases, DatabaseUseCases, CommentUseCases, UserUseCases, SearchUseCases } from "./application/useCases.js";
+
+import {
+  NotionSearchTool,
+  NotionFetchTool,
+  NotionCreatePageTool,
+  NotionCreateDatabaseTool,
+  NotionUpdatePageTool,
+  NotionDeletePageTool,
+  NotionListDatabaseItemsTool,
+  NotionQueryDatabaseTool,
+  NotionCreateCommentTool,
+  NotionGetCommentsTool,
+  NotionGetUsersTool,
+  NotionGetTeamsTool,
+} from "./presentation/tools/index.js";
 
 import "dotenv/config";
 
@@ -41,13 +55,20 @@ function createServer() {
   const userUseCases = new UserUseCases(userRepo);
   const searchUseCases = new SearchUseCases(searchRepo);
 
-  const toolHandler = new ToolHandler(
-    pageUseCases,
-    databaseUseCases,
-    commentUseCases,
-    userUseCases,
-    searchUseCases
-  );
+  const toolHandler = new ToolHandler();
+
+  toolHandler.registerTool(new NotionSearchTool(searchUseCases));
+  toolHandler.registerTool(new NotionFetchTool(pageUseCases, databaseUseCases));
+  toolHandler.registerTool(new NotionCreatePageTool(pageUseCases));
+  toolHandler.registerTool(new NotionCreateDatabaseTool(databaseUseCases));
+  toolHandler.registerTool(new NotionUpdatePageTool(pageUseCases));
+  toolHandler.registerTool(new NotionDeletePageTool(pageUseCases));
+  toolHandler.registerTool(new NotionListDatabaseItemsTool(databaseUseCases));
+  toolHandler.registerTool(new NotionQueryDatabaseTool(databaseUseCases));
+  toolHandler.registerTool(new NotionCreateCommentTool(commentUseCases));
+  toolHandler.registerTool(new NotionGetCommentsTool(commentUseCases));
+  toolHandler.registerTool(new NotionGetUsersTool(userUseCases));
+  toolHandler.registerTool(new NotionGetTeamsTool(userUseCases));
 
   const server = new Server(
     { name: "notion-custom", version: "1.0.0" },
@@ -56,10 +77,10 @@ function createServer() {
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     log("info", "list_tools_request");
-    return { tools: toolDefinitions };
+    return { tools: toolHandler.getTools() };
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
     const name = request.params.name;
     const args = request.params.arguments || {};
     log("info", "tool_call", { tool: name, args: Object.keys(args) });
@@ -93,7 +114,6 @@ app.get("/", (_req: Request, res: Response) => {
 function addValidHeaders(req: Request) {
   const accept = req.headers.accept || "";
   if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
-    log("info", "add valid headers", { method: "POST", path: "/mcp" });
     req.headers.accept = "application/json, text/event-stream";
   }
   const headerKeys = Object.keys(req.headers);
