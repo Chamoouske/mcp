@@ -1,4 +1,4 @@
-name: Build and Push
+name: Build and Push - Docker MCP
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
 jobs:
   build-push:
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
     steps:
       - uses: actions/checkout@v4
 
