@@ -97,7 +97,7 @@ function createServer() {
   server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
     const { name, arguments: args } = request.params;
     log("info", "tool_call", { tool: name, args: Object.keys(args) });
-    
+
     try {
       const result = await toolHandler.executeTool(name, args);
       log("info", "tool_success", { tool: name });
@@ -116,43 +116,43 @@ const PORT = Number(process.env.PORT) || 3002;
 
 app.use(express.json());
 
-app.use("/mcp", (req: Request, res: Response, next: NextFunction) => {
-  const accept = req.headers.accept || "";
-  if(!accept.includes("application/json") || !accept.includes("text/event-stream")) {
-    req.headers.accept = "application/json, text/event-stream";
-  }
-
-  next();
-});
-
 app.get("/", (_req: Request, res: Response) => {
-  res.json({ 
-    name: "docker-mcp", 
+  res.json({
+    name: "docker-mcp",
     version: "1.0.0",
-    status: "running" 
+    status: "running"
   });
 });
 
+function addValidHeaders(req: Request) {
+  const accept = req.headers.accept || "";
+  if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+    req.headers.accept = "application/json, text/event-stream";
+  }
+}
+
 app.post("/mcp", async (req: Request, res: Response) => {
   log("info", "request", { method: "POST", path: "/mcp" });
-  
+  addValidHeaders(req);
+
   const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
-  
+
   await server.connect(transport);
   await transport.handleRequest(req, res, req.body);
 });
 
 app.get("/mcp", async (req: Request, res: Response) => {
   log("info", "request", { method: "GET", path: "/mcp" });
-  
+  addValidHeaders(req);
+
   const server = createServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
-  
+
   await server.connect(transport);
   await transport.handleRequest(req, res);
 });
