@@ -93,6 +93,7 @@ app.get("/", (_req: Request, res: Response) => {
 function addValidHeaders(req: Request) {
   const accept = req.headers.accept || "";
   if (!accept.includes("application/json") || !accept.includes("text/event-stream")) {
+    log("info", "add valid headers", { method: "POST", path: "/mcp" });
     req.headers.accept = "application/json, text/event-stream";
   }
 }
