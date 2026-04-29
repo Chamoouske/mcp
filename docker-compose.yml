@@ -51,6 +51,21 @@ services:
       - "traefik.http.services.traefik-mcp.loadbalancer.server.port=80"
     restart: unless-stopped
 
+  playwright-mcp:
+    build:
+      context: ./playwright
+      dockerfile: Dockerfile
+    container_name: playwright-mcp
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.playwright-mcp.rule=PathPrefix(`/mcp/playwright`)"
+      - "traefik.http.routers.playwright-mcp.middlewares=playwright-mcp-stripprefix"
+      - "traefik.http.middlewares.playwright-mcp-stripprefix.stripprefix.prefixes=/mcp/playwright"
+      - "traefik.http.services.playwright-mcp.loadbalancer.server.port=80"
+    restart: unless-stopped
+
 networks:
   traefik:
     external: true
