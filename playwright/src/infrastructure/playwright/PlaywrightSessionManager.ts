@@ -9,6 +9,19 @@ type Session = {
 
 export default class PlaywrightSessionManager {
   private sessions = new Map<string, Session>();
+  private cleanupTimer: NodeJS.Timeout;
+  private cleanupRunning = false;
+
+  constructor(
+    private readonly sessionTtlMs: number = Number(process.env.PLAYWRIGHT_SESSION_TTL_MS) || 30 * 60 * 1000,
+    private readonly cleanupIntervalMs: number =
+      Number(process.env.PLAYWRIGHT_SESSION_CLEANUP_INTERVAL_MS) || 60 * 1000
+  ) {
+    this.cleanupTimer = setInterval(() => {
+      void this.cleanupExpiredSessions();
+    }, this.cleanupIntervalMs);
+    this.cleanupTimer.unref?.();
+  }
 
   async getOrCreateSession(clientId: string): Promise<Session> {
     const existing = this.sessions.get(clientId);
@@ -65,6 +78,27 @@ export default class PlaywrightSessionManager {
     return true;
   }
 
+  private async cleanupExpiredSessions(): Promise<void> {
+    if (this.cleanupRunning) {
+      return;
+    }
+    this.cleanupRunning = true;
+    try {
+      const now = Date.now();
+      const expiredClientIds = Array.from(this.sessions.entries())
+        .filter(([, session]) => now - session.updatedAt >= this.sessionTtlMs)
+        .map(([clientId]) => clientId);
+
+      if (expiredClientIds.length === 0) {
+        return;
+      }
+
+      await Promise.all(expiredClientIds.map((clientId) => this.closeSession(clientId)));
+    } finally {
+      this.cleanupRunning = false;
+    }
+  }
+
   getSessionCount(): number {
     return this.sessions.size;
   }
@@ -72,5 +106,10 @@ export default class PlaywrightSessionManager {
   async closeAll(): Promise<void> {
     const ids = Array.from(this.sessions.keys());
     await Promise.all(ids.map((id) => this.closeSession(id)));
+  }
+
+  async dispose(): Promise<void> {
+    clearInterval(this.cleanupTimer);
+    await this.closeAll();
   }
 }

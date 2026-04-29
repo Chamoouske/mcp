@@ -141,11 +141,11 @@ app.listen(PORT, () => {
 });
 
 process.on("SIGTERM", async () => {
-  await sessionManager.closeAll();
+  await sessionManager.dispose();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  await sessionManager.closeAll();
+  await sessionManager.dispose();
   process.exit(0);
 });
