@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Quick Start
+## Build & Run
 
 ```bash
 # Build all MCPs
@@ -13,7 +13,8 @@ cd notion && npm start   # http://localhost:3001/mcp
 cd ../docker && npm start  # http://localhost:3002/mcp
 cd ../traefik && npm start  # http://localhost:3003/mcp
 
-# Or via Docker (requires traefik network: docker network create traefik)
+# Docker (requires external traefik network)
+docker network create traefik  # one-time setup
 docker-compose up -d --build
 ```
 
@@ -32,15 +33,18 @@ npm start       # Run HTTP server
 npm run build   # Compile TypeScript
 ```
 
-## Project Structure
+## Architecture
 
-```
-mcp/
-├── notion/     # Notion API MCP (Clean Architecture)
-├── docker/    # Docker management MCP
-├── traefik/   # Traefik config MCP
-└── docker-compose.yml
-```
+Monorepo with 3 independent MCP servers. Each package has its own `package.json`, `tsconfig.json`, and `src/` directory. No tests or lint configs present.
+
+## Known Quirks
+
+- MCP SDK uses `StreamableHTTPServerTransport` (not `NodeStreamableHTTPServerTransport`)
+- `notion/tsconfig.json`: `noImplicitAny: false` (express type issues)
+- `docker/` and `traefik/` have `strict: false` in tsconfig
+- docker-mcp container needs `/var/run/docker.sock` volume mounted
+- Docker Compose requires external `traefik` network
+- CI pushes to `chamoouske/mcp-*` Docker Hub repos on master push
 
 ## OpenCode Config
 
@@ -59,10 +63,3 @@ Local (stdio):
   "notion": { "type": "local", "command": ["node", "path/to/mcp/notion/dist/index.js"] }
 }
 ```
-
-## Important Notes
-
-- MCP SDK uses `StreamableHTTPServerTransport` (not `NodeStreamableHTTPServerTransport`)
-- `tsconfig.json`: set `noImplicitAny: false` if TypeScript errors about express types
-- docker-mcp container needs `/var/run/docker.sock` volume mounted for Docker access
-- Docker Compose requires external `traefik` network: `docker network create traefik`
