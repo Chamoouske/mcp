@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import fs from "fs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -23,10 +24,22 @@ import {
 
 import "dotenv/config";
 
-const NOTION_API_KEY = process.env.NOTION_API_KEY;
+const getNotionApiKey = (): string | undefined => {
+  const apiKeyFile = process.env.NOTION_API_KEY_FILE;
+  if (apiKeyFile && fs.existsSync(apiKeyFile)) {
+    try {
+      return fs.readFileSync(apiKeyFile, "utf-8").trim();
+    } catch (error) {
+      console.error(`Error reading NOTION_API_KEY_FILE: ${error}`);
+    }
+  }
+  return process.env.NOTION_API_KEY;
+};
+
+const NOTION_API_KEY = getNotionApiKey();
 
 if (!NOTION_API_KEY) {
-  console.error("Error: NOTION_API_KEY is not set in environment");
+  console.error("Error: NOTION_API_KEY or NOTION_API_KEY_FILE is not set");
   process.exit(1);
 }
 
