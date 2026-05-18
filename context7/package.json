@@ -1,0 +1,28 @@
+{
+    "name": "context7-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP Server proxy for Context7 API with API key authentication",
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "start": "node dist/index.js",
+        "dev": "node dist/index.js",
+        "build": "tsc",
+        "start:compiled": "node dist/index.js",
+        "lint": "eslint src/ --ext .ts",
+        "test": "vitest run --config vitest.config.ts"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "axios": "^1.6.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0",
+        "eslint": "^8.55.0",
+        "vitest": "^1.0.0",
+        "@typescript-eslint/eslint-plugin": "^6.15.0",
+        "@typescript-eslint/parser": "^6.15.0",
+        "@vitest/coverage-v8": "^1.0.0"
+    }
+}
